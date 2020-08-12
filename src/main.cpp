@@ -3,10 +3,19 @@
 #include <ArduinoBLE.h>
 const int  buttonPin = 13;    // the pin that the pushbutton is attached to
 const int espressoPin = 12;       // the pin that the LED is attached to
-// boolean to keep track of on/off
-bool on;
+bool on; // boolean to keep track of on/off
+int timer = 0; //counts how long the button is pushed
 
 void setup() {
+   if (!BLE.begin()) {
+    Serial.println("starting BLE failed!");
+
+    while (1);
+  }
+  BLE.setAdvertisedServiceUuid("fe8e9fb9-e229-4df3-975d-8b92b7a31c9c");
+  BLE.setEventHandler(BLEConnected, blePeripheralConnectHandler);
+  BLE.setEventHandler(BLEDisconnected, blePeripheralDisconnectHandler);
+
   // initialize the button pin as a input:
   pinMode(buttonPin, INPUT);
   // initialize the LED as an output:
@@ -17,23 +26,37 @@ void setup() {
 
 
 void loop() {
-  // read the pushbutton input pin:
+    // read the pushbutton input pin:
   Serial.println("Waiting for button press/n");
   Serial.println(digitalRead(buttonPin));
   
   if (digitalRead(buttonPin) == HIGH)
   {
-  //  check to see if light is on or not
-    // if it's  not turn it on
-    if(!on)
+      // start a counter
+    while (digitalRead(buttonPin) == HIGH)
+    {
+        delay(1000);
+        timer++;
+    }
+
+      // if it is less than 5000 ms turn on /off machine else start bluetooth pairing
+    if(timer >= 5)
+    {
+      // start pairing
+      Serial.println("Pairing");
+      BLE.advertise();
+    }
+      //  if timer is less than 5 ms check to see if espressoPin is high or low
+      //  if it's low turn it on
+    else if(!on)
     {
       on = true;
       digitalWrite(espressoPin,HIGH);
       Serial.println("ON");
       delay(1000);
     }
-    // if it is turn it off
-    else
+      // if its high pull it low
+    else if(on)
     {
       on = false;
       digitalWrite(espressoPin,LOW);
@@ -42,3 +65,15 @@ void loop() {
     }
   }
 } 
+
+// central connected event handler
+void blePeripheralConnectHandler(BLEDevice central) {
+  Serial.print("Connected event, central: ");
+  Serial.println(central.address());
+}
+
+// central disconnected event handler
+void blePeripheralDisconnectHandler(BLEDevice central) {
+  Serial.print("Disconnected event, central: ");
+  Serial.println(central.address());
+}
