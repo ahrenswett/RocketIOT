@@ -5,16 +5,17 @@ const int  buttonPin = 13;    // the pin that the pushbutton is attached to
 const int espressoPin = 12;       // the pin that the LED is attached to
 bool on; // boolean to keep track of on/off
 int timer = 0; //counts how long the button is pushed
+void blePeripheralConnectHandler();
 
 void setup() {
    if (!BLE.begin()) {
-    Serial.println("starting BLE failed!");
+    Serial.println("starting BLE failed!"); 
 
     while (1);
   }
   BLE.setAdvertisedServiceUuid("fe8e9fb9-e229-4df3-975d-8b92b7a31c9c");
-  BLE.setEventHandler(BLEConnected, blePeripheralConnectHandler);
-  BLE.setEventHandler(BLEDisconnected, blePeripheralDisconnectHandler);
+  // BLE.setEventHandler(BLEConnected, blePeripheralConnectHandler;
+  // BLE.setEventHandler(BLEDisconnected, blePeripheralDisconnectHandler);
 
   // initialize the button pin as a input:
   pinMode(buttonPin, INPUT);
@@ -26,11 +27,8 @@ void setup() {
 
 
 void loop() {
-    // read the pushbutton input pin:
-  Serial.println("Waiting for button press/n");
-  Serial.println(digitalRead(buttonPin));
-  
-  if (digitalRead(buttonPin) == HIGH)
+    // read the pushbutton input pin:  
+  if (digitalRead(buttonPin) == HIGH) 
   {
       // start a counter
     while (digitalRead(buttonPin) == HIGH)
@@ -63,17 +61,19 @@ void loop() {
       Serial.println("OFF");
       delay(1000);
     }
+    // reset timer
+    timer = 0;
+
   }
 } 
 
-// central connected event handler
-void blePeripheralConnectHandler(BLEDevice central) {
-  Serial.print("Connected event, central: ");
-  Serial.println(central.address());
-}
+// // central connected event handler
+// void blePeripheralConnectHandler() {
+//   Serial.print("Connected event, central: ");
+// }
 
-// central disconnected event handler
-void blePeripheralDisconnectHandler(BLEDevice central) {
-  Serial.print("Disconnected event, central: ");
-  Serial.println(central.address());
-}
+// // central disconnected event handler
+// void blePeripheralDisconnectHandler(BLEDevice central) {
+//   Serial.print("Disconnected event, central: ");
+//   Serial.println(central.address());
+// }
