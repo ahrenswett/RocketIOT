@@ -5,24 +5,61 @@ const int  buttonPin = 13;    // the pin that the pushbutton is attached to
 const int espressoPin = 12;       // the pin that the LED is attached to
 bool on; // boolean to keep track of on/off
 int timer = 0; //counts how long the button is pushed
-void blePeripheralConnectHandler();
+BLEService esspressoService("fe8e9fb9-e229-4df3-975d-8b92b7a31c9c");
+BLEByteCharacteristic switchCharacteristic("fe8e9fb9-e229-4df3-975d-8b92b7a31c9c", BLERead | BLEWrite);
+
+
+// central connected event handler
+void blePeripheralConnectHandler(BLEDevice central) {
+  Serial.print("Connected event, central: ");
+}
+
+// central disconnected event handler
+void blePeripheralDisconnectHandler(BLEDevice central) {
+  Serial.print("Disconnected event, central: ");
+  Serial.println(central.address());
+}
+
+void switchCharacteristicWritten(BLEDevice central, BLECharacteristic characteristic) {
+  // Setup wifi disconnect bluetooth
+  Serial.print("Characteristic event, written: ");
+
+  if (central.address()) {
+    Serial.println("LED on");
+    digitalWrite(espressoPin, HIGH);
+   } /*else {
+  //   Serial.println("LED off");
+  //   digitalWrite(espressoPin, LOW);
+  // }*/
+}
+
 
 void setup() {
-   if (!BLE.begin()) {
-    Serial.println("starting BLE failed!"); 
+  Serial.begin(9600);
+  while (!Serial);
+  pinMode(espressoPin,OUTPUT);
+  pinMode(buttonPin,INPUT);
 
+  if (!BLE.begin()) {
+    Serial.println("starting BLE failed!"); 
     while (1);
   }
-  BLE.setAdvertisedServiceUuid("fe8e9fb9-e229-4df3-975d-8b92b7a31c9c");
-  // BLE.setEventHandler(BLEConnected, blePeripheralConnectHandler;
-  // BLE.setEventHandler(BLEDisconnected, blePeripheralDisconnectHandler);
+  // set the local name peripheral advertises
+  BLE.setLocalName("Rocket");
+  // set the UUID for the service this peripheral advertises
+  BLE.setAdvertisedService(esspressoService);
+  // add the characteristic to the service
+  esspressoService.addCharacteristic(switchCharacteristic);
 
-  // initialize the button pin as a input:
-  pinMode(buttonPin, INPUT);
-  // initialize the LED as an output:
-  pinMode(espressoPin, OUTPUT);
-  // initialize serial communication:
-  Serial.begin(9600);
+  BLE.addService(esspressoService);
+
+  BLE.setEventHandler(BLEConnected, blePeripheralConnectHandler);
+  BLE.setEventHandler(BLEDisconnected, blePeripheralDisconnectHandler);
+
+  // assign event handlers for characteristic
+  switchCharacteristic.setEventHandler(BLEWritten, switchCharacteristicWritten);
+  // set an initial value for the characteristic
+  switchCharacteristic.setValue(0);
 }
 
 
@@ -43,6 +80,7 @@ void loop() {
       // start pairing
       Serial.println("Pairing");
       BLE.advertise();
+      Serial.println(("Bluetooth device active, waiting for connections..."));
     }
       //  if timer is less than 5 ms check to see if espressoPin is high or low
       //  if it's low turn it on
@@ -51,7 +89,7 @@ void loop() {
       on = true;
       digitalWrite(espressoPin,HIGH);
       Serial.println("ON");
-      delay(1000);
+      delay(500);
     }
       // if its high pull it low
     else if(on)
@@ -59,21 +97,10 @@ void loop() {
       on = false;
       digitalWrite(espressoPin,LOW);
       Serial.println("OFF");
-      delay(1000);
+      delay(500);
     }
     // reset timer
     timer = 0;
 
   }
 } 
-
-// // central connected event handler
-// void blePeripheralConnectHandler() {
-//   Serial.print("Connected event, central: ");
-// }
-
-// // central disconnected event handler
-// void blePeripheralDisconnectHandler(BLEDevice central) {
-//   Serial.print("Disconnected event, central: ");
-//   Serial.println(central.address());
-// }
